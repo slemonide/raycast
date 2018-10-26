@@ -22,13 +22,13 @@ current_game = nil
 
 CONFIG = {
     NODE_SIZE = 20,
-    SHADOW_SIZE = 300,
-    WORLD_SIZE = 10,
+    SHADOW_SIZE = 500,
+    WORLD_SIZE = 20,
     PLAYER_SPEED = 100,
     JUMP_SPEED = 200,
     GRAV_ACC = -200,
     -- 4 * math.pi
-    FOV = math.pi/2,
+    FOV = math.pi*2,
     FOV_TRIANGLE_SIZE = 40,
     FOV_SPEED = 100 / 180 * math.pi,
     FISH_EYE_CORRECTION = false,

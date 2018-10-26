@@ -5,16 +5,26 @@ function game:init()
     -- 0 is floor
     -- 1 is wall
     game.world = {
-    1,1,1,1,1,1,1,1,1,1,
-    1,0,0,0,1,0,0,0,0,1,
-    1,0,0,0,1,0,0,0,0,1,
-    1,0,0,0,1,0,0,0,0,1,
-    1,0,0,0,0,0,0,0,0,1,
-    1,0,0,0,1,0,0,0,0,1,
-    1,0,0,0,1,0,0,0,0,1,
-    1,0,0,0,1,0,0,0,0,1,
-    1,0,0,0,1,0,0,0,0,1,
-    1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,0,0,0,1,0,0,0,0,1,1,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,
+    1,1,0,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
     }
 
     -- player's state
@@ -54,8 +64,8 @@ function game:update(dt)
 
     -- collision detection
     if game:isWall(game.player) then
-        game.player.x = last_pos.x
-        game.player.y = last_pos.y
+        --game.player.x = last_pos.x
+        --game.player.y = last_pos.y
     end
 
     if love.keyboard.isDown("a") then
@@ -87,28 +97,70 @@ function game:draw()
     local w = love.graphics.getWidth()
     local h = love.graphics.getHeight()
 
+    -- draw floor & ceiling
+    love.graphics.setColor(1,1,1)
+    love.graphics.rectangle('fill', 0, h/2 + game.player.z, w, h)
+    love.graphics.setColor(0.2,0.1,0.9)
+    love.graphics.rectangle('fill', 0, 0, w, h/2 + game.player.z)
+    love.graphics.setLineWidth(2)
+
+    -- draw walls
+
+    function sine(f,t)
+        return (math.sin(f*t/500)+1)/2
+    end
+
     -- render scene
     for i=1,w do
         local rot = game.player.rot + (i - w/2) * CONFIG.FOV/w
 
         local dist, side = game:getDistanceToObstacle(rot)
         local shadow = math.min(dist/CONFIG.SHADOW_SIZE,0.5)
-        if side == "x" then
+        --[[if side == "x" then
             love.graphics.setColor(0.6-shadow,0.6-shadow,0.6-shadow)
         elseif side == "y" then
             love.graphics.setColor(0.55-shadow, 0.55-shadow,0.55-shadow)
         end
+        --]]
         --[[
         if side == "x" then
-            love.graphics.setColor(0,0,1-math.min(dist/350,1))
+            if i*math.floor(t1*10) % 10 <= 5 then
+                love.graphics.setColor(0,0,1-math.min(dist/350,1))
+            else--if i % 3 == 1 then
+                love.graphics.setColor(1-math.min(dist/350,1),0,0)
+            end
         elseif side == "y" then
-            love.graphics.setColor(0, 1-math.min(dist/350,1),0)
+            if i*math.floor(t1*20) % 10 <= 5 then
+                love.graphics.setColor(0,0,math.min(dist/350,1))
+            else--if i % 3 == 1 then
+                love.graphics.setColor(math.min(dist/350,1),0,0)
+            end
+            --love.graphics.setColor(0, 1-math.min(dist/350,1),0)
+        end
+        --]]
+        --[[
+        if side == "x" then
+            love.graphics.setColor((0.6-shadow)*sine(math.sqrt(2),t1),(0.6-shadow)*sine(math.exp(1),t1),(0.6-shadow)*sine(math.sqrt(13),t1))
+        elseif side == "y" then
+            love.graphics.setColor((0.55-shadow)*sine(7,t1), (0.55-shadow)*sine(math.pi*2,t1),(0.55-shadow)*sine(13,t1))
+        end
+        --]]
+        ----[[
+        if side == "x" then
+            love.graphics.setColor((0.6-shadow)*sine(math.sqrt(2),game.player.x),
+                (0.6-shadow)*sine(math.exp(1),game.player.y),
+                (0.6-shadow)*sine(math.sqrt(13),game.player.x))
+        elseif side == "y" then
+            love.graphics.setColor((0.55-shadow)*sine(7,game.player.y),
+                (0.55-shadow)*sine(math.pi*2,game.player.x),
+                (0.55-shadow)*sine(13,game.player.y))
         end
         --]]
         love.graphics.line(i, game.player.z + h/2 - 10000/dist, i, game.player.z + h/2 + 10000/dist)
     end
 
     -- render map
+    --[[
     for i,v in ipairs(game.world) do
         x = ((i - 1) % CONFIG.WORLD_SIZE) * CONFIG.NODE_SIZE
         y = (math.floor((i - 1) / CONFIG.WORLD_SIZE)) * CONFIG.NODE_SIZE
@@ -119,6 +171,7 @@ function game:draw()
         love.graphics.setColor(1, 1, 1)
         love.graphics.rectangle("line", x, y, CONFIG.NODE_SIZE, CONFIG.NODE_SIZE)
     end
+
 
     love.graphics.setColor(1, 0.42, 0.64)
     love.graphics.arc("fill", game.player.x, game.player.y,
@@ -137,7 +190,7 @@ function game:draw()
             game.player.x + math.cos(rot) * dist,
             game.player.y + math.sin(rot) * dist)
     end
-
+    --]]
     local t2 = os.clock()
     local fps = string.format("FPS: %.0f", 1/(t2 - t1))
     love.graphics.print(fps, w - 100, 10)
@@ -157,7 +210,7 @@ function game:getDistanceToObstacle(angle)
         y = step * math.sin(angle)
     }
 
-    for i=1,1000 do
+    for i=1,500 do
             local isWall, ind = game:isWall(current_pos)
         if isWall then
             local wallY = math.floor(ind / CONFIG.WORLD_SIZE) * CONFIG.NODE_SIZE
