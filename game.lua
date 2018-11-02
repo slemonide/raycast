@@ -41,8 +41,8 @@ function game:init()
     -- position, in pixel coordinates
     -- rotation, in radians, 0 is +x
     game.player = {
-        x = 2 * CONFIG.NODE_SIZE,
-        y = 2 * CONFIG.NODE_SIZE,
+        x = 2, --* CONFIG.NODE_SIZE,
+        y = 2, --* CONFIG.NODE_SIZE,
         z = 0,
         vz = 0, -- speed in the z direction
         rot = 0
@@ -51,14 +51,17 @@ function game:init()
 
     math.randomseed(os.time())
 
-    game.fluke.x = math.random() * CONFIG.NODE_SIZE * CONFIG.WORLD_SIZE
-    game.fluke.y = math.random() * CONFIG.NODE_SIZE * CONFIG.WORLD_SIZE
+    game.fluke.x = math.random() * CONFIG.WORLD_SIZE -- * CONFIG.NODE_SIZE * CONFIG.WORLD_SIZE
+    game.fluke.y = math.random() * CONFIG.WORLD_SIZE -- * CONFIG.NODE_SIZE * CONFIG.WORLD_SIZE
 
     angle = math.random() * math.pi * 2
     game.fluke.vx = CONFIG.FLUKE_SPEED * math.cos(angle)
     game.fluke.vy = CONFIG.FLUKE_SPEED * math.sin(angle)
 
     game.staticBurst = love.audio.newSource(love.sound.newSoundData(math.floor(.2 * 44100), 44100, 16, 1))
+
+    game.renderModes = {"3d", "3d_curved", "map", "map_curved"}
+    game.renderMode = 1
 end
 
 function game:update(dt)
@@ -86,11 +89,11 @@ function game:update(dt)
     game.fluke.x = game.fluke.x + game.fluke.vx * dt
     game.fluke.y = game.fluke.y + game.fluke.vy * dt
 
-    if game.fluke.x < 0 or game.fluke.x > CONFIG.NODE_SIZE * CONFIG.WORLD_SIZE then
+    if game.fluke.x < 0 or game.fluke.x > CONFIG.WORLD_SIZE then
         game.fluke.vx = -game.fluke.vx
         game.fluke.x = game.fluke.x + game.fluke.vx * dt
     end
-    if game.fluke.y < 0 or game.fluke.y > CONFIG.NODE_SIZE * CONFIG.WORLD_SIZE then
+    if game.fluke.y < 0 or game.fluke.y > CONFIG.WORLD_SIZE then
         game.fluke.vy = -game.fluke.vy
         game.fluke.y = game.fluke.y + game.fluke.vy * dt
     end
@@ -161,94 +164,81 @@ function game:draw()
     local w = love.graphics.getWidth()
     local h = love.graphics.getHeight()
 
-    -- draw floor & ceiling
-    love.graphics.setColor(1,1,1)
-    love.graphics.rectangle('fill', 0, h/2 + game.player.z, w, h)
-    love.graphics.setColor(0.2,0.1,0.9)
-    love.graphics.rectangle('fill', 0, 0, w, h/2 + game.player.z)
-    love.graphics.setLineWidth(2)
+    if game.renderModes[game.renderMode] == "3d" or game.renderModes[game.renderMode] == "3d_curved" then
 
-    -- draw walls
+        -- draw floor & ceiling
+        love.graphics.setColor(1,1,1)
+        love.graphics.rectangle('fill', 0, h/2 + game.player.z, w, h)
+        love.graphics.setColor(0.2,0.1,0.9)
+        love.graphics.rectangle('fill', 0, 0, w, h/2 + game.player.z)
+        love.graphics.setLineWidth(2)
 
-    -- render scene
-    for i=1,w do
-        local rot = game.player.rot + (i - w/2) * CONFIG.FOV/w
+        -- draw walls
 
-        local dist, side = game:getDistanceToObstacle(rot, true)
-        local shadow = math.min(dist/CONFIG.SHADOW_SIZE,0.5)
-        --[[if side == "x" then
-            love.graphics.setColor(0.6-shadow,0.6-shadow,0.6-shadow)
-        elseif side == "y" then
-            love.graphics.setColor(0.55-shadow, 0.55-shadow,0.55-shadow)
-        end
-        --]]
-        --[[
-        if side == "x" then
-            if i*math.floor(t1*100) % 10 <= 5 then
-                love.graphics.setColor(0,0,1-math.min(dist/350,1))
-            else--if i % 3 == 1 then
-                love.graphics.setColor(1-math.min(dist/350,1),0,0)
+        -- render scene
+        for i=1,w do
+            local rot = game.player.rot + (i - w/2) * CONFIG.FOV/w
+
+            local dist, side = game:getDistanceToObstacle(rot, game.renderModes[game.renderMode] == "3d_curved")
+            local shadow = math.min(dist/CONFIG.SHADOW_SIZE,0.5)
+            --[[if side == "x" then
+                love.graphics.setColor(0.6-shadow,0.6-shadow,0.6-shadow)
+            elseif side == "y" then
+                love.graphics.setColor(0.55-shadow, 0.55-shadow,0.55-shadow)
             end
-        elseif side == "y" then
-            if i*math.floor(t1*200) % 10 <= 5 then
-                love.graphics.setColor(0,0,math.min(dist/350,1))
-            else--if i % 3 == 1 then
-                love.graphics.setColor(math.min(dist/350,1),0,0)
+            --]]
+            --[[
+            if side == "x" then
+                if i*math.floor(t1*100) % 10 <= 5 then
+                    love.graphics.setColor(0,0,1-math.min(dist/350,1))
+                else--if i % 3 == 1 then
+                    love.graphics.setColor(1-math.min(dist/350,1),0,0)
+                end
+            elseif side == "y" then
+                if i*math.floor(t1*200) % 10 <= 5 then
+                    love.graphics.setColor(0,0,math.min(dist/350,1))
+                else--if i % 3 == 1 then
+                    love.graphics.setColor(math.min(dist/350,1),0,0)
+                end
+                --love.graphics.setColor(0, 1-math.min(dist/350,1),0)
             end
-            --love.graphics.setColor(0, 1-math.min(dist/350,1),0)
-        end
-        --]]
-        --[[
-        if side == "x" then
-            if i*math.floor(t1*5) % 10 <= 5 then
-                love.graphics.setColor((0.6-shadow)*sine(math.sqrt(2),t1),(0.6-shadow)*sine(math.exp(1),t1),1-math.min(dist/350,1))
-            else--if i % 3 == 1 then
-                love.graphics.setColor(1-math.min(dist/350,1),(0.6-shadow)*sine(math.sqrt(7),t1),(0.6-shadow)*sine(math.exp(13),t1))
+            --]]
+            --[[
+            if side == "x" then
+                if i*math.floor(t1*5) % 10 <= 5 then
+                    love.graphics.setColor((0.6-shadow)*sine(math.sqrt(2),t1),(0.6-shadow)*sine(math.exp(1),t1),1-math.min(dist/350,1))
+                else--if i % 3 == 1 then
+                    love.graphics.setColor(1-math.min(dist/350,1),(0.6-shadow)*sine(math.sqrt(7),t1),(0.6-shadow)*sine(math.exp(13),t1))
+                end
+            elseif side == "y" then
+                if i*math.floor(t1*3) % 10 <= 5 then
+                    love.graphics.setColor((0.6-shadow)*sine(math.sqrt(32),t1),(0.6-shadow)*sine(math.exp(31),t1),math.min(dist/350,1))
+                else--if i % 3 == 1 then
+                    love.graphics.setColor(math.min(dist/350,1),(0.6-shadow)*sine(math.sqrt(5),t1),(0.6-shadow)*sine(math.exp(11),t1))
+                end
+                --love.graphics.setColor(0, 1-math.min(dist/350,1),0)
             end
-        elseif side == "y" then
-            if i*math.floor(t1*3) % 10 <= 5 then
-                love.graphics.setColor((0.6-shadow)*sine(math.sqrt(32),t1),(0.6-shadow)*sine(math.exp(31),t1),math.min(dist/350,1))
-            else--if i % 3 == 1 then
-                love.graphics.setColor(math.min(dist/350,1),(0.6-shadow)*sine(math.sqrt(5),t1),(0.6-shadow)*sine(math.exp(11),t1))
+            --]]
+            --[[
+            if side == "x" then
+                love.graphics.setColor((0.6-shadow)*sine(math.sqrt(2),t1),(0.6-shadow)*sine(math.exp(1),t1),(0.6-shadow)*sine(math.sqrt(13),t1))
+            elseif side == "y" then
+                love.graphics.setColor((0.55-shadow)*sine(7,t1), (0.55-shadow)*sine(math.pi*2,t1),(0.55-shadow)*sine(13,t1))
             end
-            --love.graphics.setColor(0, 1-math.min(dist/350,1),0)
-        end
-        --]]
-        --[[
-        if side == "x" then
-            love.graphics.setColor((0.6-shadow)*sine(math.sqrt(2),t1),(0.6-shadow)*sine(math.exp(1),t1),(0.6-shadow)*sine(math.sqrt(13),t1))
-        elseif side == "y" then
-            love.graphics.setColor((0.55-shadow)*sine(7,t1), (0.55-shadow)*sine(math.pi*2,t1),(0.55-shadow)*sine(13,t1))
-        end
-        --]]
-        --[[
-        if side == "x" then
-            love.graphics.setColor((0.6-shadow)*sine(math.sqrt(2),game.player.x)*sine(math.sqrt(5),t1),
-                (0.6-shadow)*sine(math.exp(1)*sine(math.sqrt(7),t1),game.player.y),
-                (0.6-shadow)*sine(math.sqrt(13)*sine(math.sqrt(11),t1),game.player.x))
-        elseif side == "y" then
-            love.graphics.setColor((0.55-shadow)*sine(7,game.player.y)*sine(math.sqrt(31),t1),
-                (0.55-shadow)*sine(math.pi*2,game.player.x)*sine(math.sqrt(13),t1),
-                (0.55-shadow)*sine(13,game.player.y)*sine(math.sqrt(math.pi),t1))
-        end
-        --]]
-        ----[[
-        shadow = shadow*4
-        if side == "x" then
-            love.graphics.setColor(math.exp(-shadow)*sine(math.sqrt(2),game.player.x)*sine(math.sqrt(5),t1),
-                math.exp(-shadow)*sine(math.exp(1)*sine(math.sqrt(7),t1),game.player.y),
-                math.exp(-shadow)*sine(math.sqrt(13)*sine(math.sqrt(11),t1),game.player.x))
-        elseif side == "y" then
-            love.graphics.setColor(math.exp(-shadow)*sine(7,game.player.y)*sine(math.sqrt(31),t1),
-                math.exp(-shadow)*sine(math.pi*2,game.player.x)*sine(math.sqrt(13),t1),
-                math.exp(-shadow)*sine(13,game.player.y)*sine(math.sqrt(math.pi),t1))
-        end
-        --]]
-        love.graphics.line(i, game.player.z + h/2 - 10000/dist, i, game.player.z + h/2 + 10000/dist)
-        --[[
-        for z=math.floor(game.player.z + h/2 - 10000/dist), math.floor(game.player.z + h/2 + 10000/dist) do
-            shadow = shadow
-            shadow = math.sqrt((shadow/100)^2 + (z/300)^2)
+            --]]
+            --[[
+            if side == "x" then
+                love.graphics.setColor((0.6-shadow)*sine(math.sqrt(2),game.player.x)*sine(math.sqrt(5),t1),
+                    (0.6-shadow)*sine(math.exp(1)*sine(math.sqrt(7),t1),game.player.y),
+                    (0.6-shadow)*sine(math.sqrt(13)*sine(math.sqrt(11),t1),game.player.x))
+            elseif side == "y" then
+                love.graphics.setColor((0.55-shadow)*sine(7,game.player.y)*sine(math.sqrt(31),t1),
+                    (0.55-shadow)*sine(math.pi*2,game.player.x)*sine(math.sqrt(13),t1),
+                    (0.55-shadow)*sine(13,game.player.y)*sine(math.sqrt(math.pi),t1))
+            end
+            --]]
+            ----[[
+            shadow = shadow*4
             if side == "x" then
                 love.graphics.setColor(math.exp(-shadow)*sine(math.sqrt(2),game.player.x)*sine(math.sqrt(5),t1),
                     math.exp(-shadow)*sine(math.exp(1)*sine(math.sqrt(7),t1),game.player.y),
@@ -258,39 +248,58 @@ function game:draw()
                     math.exp(-shadow)*sine(math.pi*2,game.player.x)*sine(math.sqrt(13),t1),
                     math.exp(-shadow)*sine(13,game.player.y)*sine(math.sqrt(math.pi),t1))
             end
+            --]]
+            love.graphics.line(i, game.player.z + h/2 - 500/dist, i, game.player.z + h/2 + 500/dist)
+            --[[
+            for z=math.floor(game.player.z + h/2 - 10000/dist), math.floor(game.player.z + h/2 + 10000/dist) do
+                shadow = shadow
+                shadow = math.sqrt((shadow/100)^2 + (z/300)^2)
+                if side == "x" then
+                    love.graphics.setColor(math.exp(-shadow)*sine(math.sqrt(2),game.player.x)*sine(math.sqrt(5),t1),
+                        math.exp(-shadow)*sine(math.exp(1)*sine(math.sqrt(7),t1),game.player.y),
+                        math.exp(-shadow)*sine(math.sqrt(13)*sine(math.sqrt(11),t1),game.player.x))
+                elseif side == "y" then
+                    love.graphics.setColor(math.exp(-shadow)*sine(7,game.player.y)*sine(math.sqrt(31),t1),
+                        math.exp(-shadow)*sine(math.pi*2,game.player.x)*sine(math.sqrt(13),t1),
+                        math.exp(-shadow)*sine(13,game.player.y)*sine(math.sqrt(math.pi),t1))
+                end
 
-            love.graphics.points(i, z)
+                love.graphics.points(i, z)
+            end
+            --]]
         end
-        --]]
-    end
 
     -- render map
-    if love.keyboard.isDown("tab") then
+    elseif game.renderModes[game.renderMode] == "map" or game.renderModes[game.renderMode] == "map_curved" then
+        local n_w = w / CONFIG.NODE_SIZE
+        local n_h = h / CONFIG.NODE_SIZE
+
         for i,v in ipairs(game.world) do
-            x = ((i - 1) % CONFIG.WORLD_SIZE) * CONFIG.NODE_SIZE
-            y = (math.floor((i - 1) / CONFIG.WORLD_SIZE)) * CONFIG.NODE_SIZE
+            x = ((i - 1) % CONFIG.WORLD_SIZE) * n_w
+            y = (math.floor((i - 1) / CONFIG.WORLD_SIZE)) * n_h
             if v == 1 then
                 love.graphics.setColor(0.70, 0.63, 0.05)
-                love.graphics.rectangle("fill", x, y, CONFIG.NODE_SIZE, CONFIG.NODE_SIZE)
+                love.graphics.rectangle("fill", x, y, n_w, n_h)
             end
             love.graphics.setColor(1, 1, 1)
-            love.graphics.rectangle("line", x, y, CONFIG.NODE_SIZE, CONFIG.NODE_SIZE)
+            love.graphics.rectangle("line", x, y, n_w, n_h)
         end
 
-
+        --[[
         love.graphics.setColor(1, 0.42, 0.64)
         love.graphics.arc("fill", game.player.x, game.player.y,
             CONFIG.FOV_TRIANGLE_SIZE,
             game.player.rot + CONFIG.FOV/2,
             game.player.rot - CONFIG.FOV/2)
+        --]]
         love.graphics.setColor(0.42, 0.63, 0.05)
-        love.graphics.circle("fill", game.player.x, game.player.y, CONFIG.NODE_SIZE/4)
+        love.graphics.circle("fill", game.player.x * n_w, game.player.y * n_h, CONFIG.NODE_SIZE/4)
 
         love.graphics.setColor(0, 1, 0)
         for i=-50,50 do
             local rot = game.player.rot + i * CONFIG.FOV/100
 
-            dist, side, points = game:getDistanceToObstacle(rot, true)
+            dist, side, points = game:getDistanceToObstacle(rot, game.renderModes[game.renderMode] == "map_curved", n_w, n_h)
             love.graphics.line(points)
             --[[
             love.graphics.line(game.player.x, game.player.y,
@@ -300,7 +309,7 @@ function game:draw()
         end
 
         love.graphics.setColor(0.82, 0.63, 0.05)
-        love.graphics.circle("fill", game.fluke.x, game.fluke.y, CONFIG.NODE_SIZE/4)
+        love.graphics.circle("fill", game.fluke.x * n_w, game.fluke.y * n_h, CONFIG.NODE_SIZE/4)
 
         --]]
         local t2 = os.clock()
@@ -310,7 +319,14 @@ function game:draw()
     --end)
 end
 
-function game:getDistanceToObstacle(angle,bend)
+function game:getDistanceToObstacle(angle,bend, n_w, n_h)
+    if not n_w then
+        n_w = 1
+    end
+    if not n_h then
+        n_h = 1
+    end
+
     local distance_so_far = 0
 
     local points = {}
@@ -320,22 +336,22 @@ function game:getDistanceToObstacle(angle,bend)
         y = game.player.y
     }
 
-    table.insert(points, current_pos.x)
-    table.insert(points, current_pos.y)
+    table.insert(points, current_pos.x * n_w)
+    table.insert(points, current_pos.y * n_h)
 
-    local step = 1
+    local step = 0.1
     local dp = {
         x = step * math.cos(angle),
         y = step * math.sin(angle)
     }
 
-    for i=1,500 do
+    for i=1,250 do
             local isWall, ind = game:isWall(current_pos)
         if isWall then
-            local wallY = math.floor(ind / CONFIG.WORLD_SIZE) * CONFIG.NODE_SIZE
-            local wallX = (ind % CONFIG.WORLD_SIZE) * CONFIG.NODE_SIZE
-            local dx = current_pos.x - wallX + CONFIG.NODE_SIZE/2
-            local dy = current_pos.y - wallY - CONFIG.NODE_SIZE/2
+            local wallY = math.floor(ind / CONFIG.WORLD_SIZE)
+            local wallX = (ind % CONFIG.WORLD_SIZE)
+            local dx = current_pos.x - wallX + 1/2
+            local dy = current_pos.y - wallY - 1/2
            
             local angle_in = math.atan(dy/dx) + math.pi/4
  
@@ -374,67 +390,16 @@ function game:getDistanceToObstacle(angle,bend)
             current_pos.y = current_pos.y + dp.y * 0.8
             distance_so_far = distance_so_far + step * 0.8
 
-            table.insert(points, current_pos.x)
-            table.insert(points, current_pos.y)
+            table.insert(points, current_pos.x * n_w)
+            table.insert(points, current_pos.y * n_h)
         end
     end
 
     return distance_so_far, "x", points
 end
 
---[[
--- CONSTANT STEP VERSION
-function game:getDistanceToObstacle(angle)
-    local distance_so_far = 0
-
-    local current_pos = {
-        x = game.player.x,
-        y = game.player.y
-    }
-
-    local step = 0.5
-    local dp = {
-        x = step * math.cos(angle),
-        y = step * math.sin(angle)
-    }
-
-    for i=1,10000 do
-            local isWall, ind = game:isWall(current_pos)
-        if isWall then
-            local wallY = math.floor(ind / CONFIG.WORLD_SIZE) * CONFIG.NODE_SIZE
-            local wallX = (ind % CONFIG.WORLD_SIZE) * CONFIG.NODE_SIZE
-            local dx = current_pos.x - wallX + CONFIG.NODE_SIZE/2
-            local dy = current_pos.y - wallY - CONFIG.NODE_SIZE/2
-           
-            local angle_in = math.atan(dy/dx) + math.pi/4
- 
-            if CONFIG.FISH_EYE_CORRECTION then
-                if math.tan(angle_in) > 0 then
-                    return distance_so_far * math.cos((angle - game.player.rot) * CONFIG.FISH_EYE_FACTOR), "x"
-                else
-                    return distance_so_far * math.cos((angle - game.player.rot) * CONFIG.FISH_EYE_FACTOR), "y"
-                end
-            else
-                if math.tan(angle_in) > 0 then
-                    return distance_so_far, "x"
-                else
-                    return distance_so_far, "y"
-                end
-            end
-        else
-            current_pos.x = current_pos.x + dp.x
-            current_pos.y = current_pos.y + dp.y
-            distance_so_far = distance_so_far + step
-        end
-    end
-
-    return distance_so_far, "x"
-end
---]]
-
 function game:isWall(pos)
-    i = math.ceil(pos.x / CONFIG.NODE_SIZE) +
-        math.floor((pos.y / CONFIG.NODE_SIZE)) * CONFIG.WORLD_SIZE
+    i = math.ceil(pos.x) + math.floor(pos.y) * CONFIG.WORLD_SIZE
     if game.world[i] == 1 then
         return true, i
     else
@@ -445,6 +410,22 @@ end
 function game:keypressed(key)
     if key == "escape" then
         love.event.quit()
+    end
+
+    if key == "tab" then
+        game.renderMode = (game.renderMode + 1) % (#game.renderModes + 1)
+        if game.renderMode == 0 then
+            game.renderMode = 1
+        end
+    end
+    if key == "1" then
+        game.renderMode = 1
+    elseif key == "2" then
+        game.renderMode = 2
+    elseif key == "3" then
+        game.renderMode = 3
+    elseif key == "4" then
+        game.renderMode = 4
     end
 end
 

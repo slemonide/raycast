@@ -25,16 +25,16 @@ CONFIG = {
     NODE_SIZE = 20,
     SHADOW_SIZE = 500,
     WORLD_SIZE = 20,
-    PLAYER_SPEED = 100,
+    PLAYER_SPEED = 5,
     JUMP_SPEED = 200,
     GRAV_ACC = -200,
     -- 4 * math.pi
-    FOV = math.pi,
+    FOV = math.pi/2,
     FOV_TRIANGLE_SIZE = 40,
     FOV_SPEED = 100 / 180 * math.pi,
     FISH_EYE_CORRECTION = false,
     FISH_EYE_FACTOR = 0.88,
 
-    FLUKE_SPEED = 5,--100,
-    FLUKE_STRENGTH = -0.1--0.3 --0.1
+    FLUKE_SPEED = 5,--5,--100,
+    FLUKE_STRENGTH = 0.003---0.1--0.3 --0.1
 }
