@@ -60,8 +60,9 @@ function game:init()
 
     game.staticBurst = love.audio.newSource(love.sound.newSoundData(math.floor(.2 * 44100), 44100, 16, 1))
 
-    game.renderModes = {"3d", "3d_curved", "map", "map_curved"}
-    game.renderMode = 1
+    game.renderModes = {"3d", "3d_curved", "map", "map_curved", "map_centered", "map_centered_curved",
+                        "map_centered_shadow", "map_centered_curved_shadow"}
+    game.renderMode = 7
 end
 
 function game:update(dt)
@@ -312,10 +313,97 @@ function game:draw()
         love.graphics.circle("fill", game.fluke.x * n_w, game.fluke.y * n_h, CONFIG.NODE_SIZE/4)
 
         --]]
-        local t2 = os.clock()
-        local fps = string.format("FPS: %.0f", 1/(t2 - t1))
-        love.graphics.print(fps, w - 100, 10)
+    elseif game.renderModes[game.renderMode] == "map_centered"
+        or game.renderModes[game.renderMode] == "map_centered_curved" then
+
+        love.graphics.translate(w/2 - game.player.x * CONFIG.NODE_SIZE,
+            h/2 - game.player.y * CONFIG.NODE_SIZE)
+        for i,v in ipairs(game.world) do
+            x = ((i - 1) % CONFIG.WORLD_SIZE) * CONFIG.NODE_SIZE
+            y = (math.floor((i - 1) / CONFIG.WORLD_SIZE)) * CONFIG.NODE_SIZE
+            if v == 1 then
+                love.graphics.setColor(0.70, 0.63, 0.05)
+                love.graphics.rectangle("fill", x, y, CONFIG.NODE_SIZE, CONFIG.NODE_SIZE)
+            end
+            love.graphics.setColor(1, 1, 1)
+            love.graphics.rectangle("line", x, y, CONFIG.NODE_SIZE, CONFIG.NODE_SIZE)
+        end
+
+        --[[
+        love.graphics.setColor(1, 0.42, 0.64)
+        love.graphics.arc("fill", game.player.x, game.player.y,
+            CONFIG.FOV_TRIANGLE_SIZE,
+            game.player.rot + CONFIG.FOV/2,
+            game.player.rot - CONFIG.FOV/2)
+        --]]
+        love.graphics.setColor(0.42, 0.63, 0.05)
+        love.graphics.circle("fill", game.player.x * CONFIG.NODE_SIZE, game.player.y * CONFIG.NODE_SIZE, CONFIG.NODE_SIZE/4)
+
+        love.graphics.setColor(0, 1, 0)
+        for i=-50,50 do
+            local rot = game.player.rot + i * CONFIG.FOV/100
+
+            dist, side, points = game:getDistanceToObstacle(rot, game.renderModes[game.renderMode] == "map_centered_curved",
+                CONFIG.NODE_SIZE, CONFIG.NODE_SIZE)
+            love.graphics.line(points)
+            --[[
+            love.graphics.line(game.player.x, game.player.y,
+                game.player.x + math.cos(rot) * dist,
+                game.player.y + math.sin(rot) * dist)
+            --]]
+        end
+
+        love.graphics.setColor(0.82, 0.63, 0.05)
+        love.graphics.circle("fill", game.fluke.x * CONFIG.NODE_SIZE, game.fluke.y * CONFIG.NODE_SIZE, CONFIG.NODE_SIZE/4)
+        love.graphics.origin()
+        --]]
+    elseif game.renderModes[game.renderMode] == "map_centered_shadow"
+        or game.renderModes[game.renderMode] == "map_centered_curved_shadow" then
+
+        love.graphics.translate(w/2 - game.player.x * CONFIG.NODE_SIZE,
+            h/2 - game.player.y * CONFIG.NODE_SIZE)
+
+        love.graphics.setColor(0.42, 0.63, 0.05)
+        love.graphics.circle("fill", game.player.x * CONFIG.NODE_SIZE, game.player.y * CONFIG.NODE_SIZE, CONFIG.NODE_SIZE/4)
+
+        walls = {}
+        for i=-100,100 do
+            local rot = game.player.rot + i * math.pi*2/100
+
+            dist, side, points = game:getDistanceToObstacle(rot,
+                game.renderModes[game.renderMode] == "map_centered_curved_shadow",
+                CONFIG.NODE_SIZE, CONFIG.NODE_SIZE)
+            --table.insert(walls, points[#points-1])
+            --table.insert(walls, points[#points-2])
+            --[[
+            love.graphics.line(game.player.x, game.player.y,
+                game.player.x + math.cos(rot) * dist,
+                game.player.y + math.sin(rot) * dist)
+            --]]
+            table.insert(walls, (game.player.x + math.cos(rot) * dist) * CONFIG.NODE_SIZE)
+            table.insert(walls, (game.player.x + math.sin(rot) * dist) * CONFIG.NODE_SIZE)
+            if i == 0 then
+                love.graphics.setColor(0.63, 0.42, 0.05)
+                love.graphics.line(game.player.x * CONFIG.NODE_SIZE, game.player.y * CONFIG.NODE_SIZE,
+                (game.player.x + math.cos(rot) * dist) * CONFIG.NODE_SIZE,
+                (game.player.y + math.sin(rot) * dist) * CONFIG.NODE_SIZE)
+            end
+        end
+        love.graphics.setColor(0.42, 0.63, 0.05)
+        love.graphics.line(walls)
+
+        love.graphics.setColor(0.82, 0.63, 0.05)
+        love.graphics.circle("fill", game.fluke.x * CONFIG.NODE_SIZE, game.fluke.y * CONFIG.NODE_SIZE, CONFIG.NODE_SIZE/4)
+        love.graphics.origin()
+        --]]
     end
+    
+    local t2 = os.clock()
+    local fps = string.format("FPS: %.0f", 1/(t2 - t1))
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.rectangle("fill", w - 150, 10, 200, 20)
+    love.graphics.setColor(0, 0, 0)
+    love.graphics.print(fps, w - 100, 10)
     --end)
 end
 
@@ -339,14 +427,14 @@ function game:getDistanceToObstacle(angle,bend, n_w, n_h)
     table.insert(points, current_pos.x * n_w)
     table.insert(points, current_pos.y * n_h)
 
-    local step = 0.1
+    local step = CONFIG.RAYTRACER_STEP
     local dp = {
         x = step * math.cos(angle),
         y = step * math.sin(angle)
     }
 
-    for i=1,250 do
-            local isWall, ind = game:isWall(current_pos)
+    for i=1,CONFIG.RAYTRACER_MAX do
+        local isWall, ind = game:isWall(current_pos)
         if isWall then
             local wallY = math.floor(ind / CONFIG.WORLD_SIZE)
             local wallX = (ind % CONFIG.WORLD_SIZE)
@@ -426,6 +514,14 @@ function game:keypressed(key)
         game.renderMode = 3
     elseif key == "4" then
         game.renderMode = 4
+    elseif key == "5" then
+        game.renderMode = 5
+    elseif key == "6" then
+        game.renderMode = 6
+    elseif key == "7" then
+        game.renderMode = 7
+    elseif key == "8" then
+        game.renderMode = 8
     end
 end
 

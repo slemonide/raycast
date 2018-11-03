@@ -22,12 +22,16 @@ states.game =      require "game"
 current_game = nil
 
 CONFIG = {
-    NODE_SIZE = 20,
+    NODE_SIZE = 30,
     SHADOW_SIZE = 500,
     WORLD_SIZE = 20,
     PLAYER_SPEED = 5,
     JUMP_SPEED = 200,
     GRAV_ACC = -200,
+
+    RAYTRACER_STEP = 0.01,
+    RAYTRACER_MAX = 100000,
+
     -- 4 * math.pi
     FOV = math.pi/2,
     FOV_TRIANGLE_SIZE = 40,
@@ -36,5 +40,5 @@ CONFIG = {
     FISH_EYE_FACTOR = 0.88,
 
     FLUKE_SPEED = 5,--5,--100,
-    FLUKE_STRENGTH = 0.003---0.1--0.3 --0.1
+    FLUKE_STRENGTH = 0.00006---0.1--0.3 --0.1
 }
